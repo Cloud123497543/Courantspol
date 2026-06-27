@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carte des idéologies politiques occidentales</title>
+<style>
+:root {
+  --bg: #0c0c10;
+  --bg2: #13131a;
+  --bg3: #1a1a24;
+  --bg4: #20202e;
+  --border: #232330;
+  --border2: #2e2e40;
+  --text: #eae8f4;
+  --text2: #8e8ca8;
+  --text3: #4e4c62;
+  --accent: #7c6af7;
+  --radius: 8px;
+  --panel-w: 330px;
+  --sidebar-w: 210px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:13px;display:flex;flex-direction:column}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;gap:12px;z-index:100}
+.header-left h1{font-size:13.5px;font-weight:600;letter-spacing:.01em}
+.header-left span{font-size:10.5px;color:var(--text3);margin-top:1px;display:block}
+.header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* SEARCH */
+.search-wrap{position:relative}
+.search-wrap input{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:5px 10px 5px 30px;font-size:12px;color:var(--text);width:190px;outline:none;transition:border-color .15s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap input::placeholder{color:var(--text3)}
+.s-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--bg3);border-radius:7px;padding:2px}
+.tab{padding:4px 12px;font-size:11.5px;cursor:pointer;border-radius:5px;color:var(--text2);transition:all .15s;border:none;background:none}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--bg4);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+
+/* LEGEND TOGGLE */
+.legend-toggle{font-size:11px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer;white-space:nowrap}
+.legend-toggle:hover{color:var(--text)}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);overflow-y:auto;padding:10px 6px;display:flex;flex-direction:column;gap:2px}
+.sidebar-section{font-size:9.5px;font-weight:700;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;padding:8px 8px 4px}
+.fam-btn{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;cursor:pointer;border:none;background:none;color:var(--text2);text-align:left;width:100%;font-size:11.5px;transition:all .12s}
+.fam-btn:hover{background:var(--bg3);color:var(--text)}
+.fam-btn.active{background:var(--bg3);color:var(--text)}
+.fam-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.fam-count{margin-left:auto;font-size:10px;color:var(--text3);background:var(--bg4);padding:1px 5px;border-radius:4px}
+
+/* CENTER */
+.center{flex:1;overflow:hidden;position:relative}
+
+/* COMPASS */
+#compass-view{position:absolute;inset:0}
+#compass-canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
+#compass-canvas:active{cursor:grabbing}
+.map-controls{position:absolute;bottom:14px;right:14px;display:flex;flex-direction:column;gap:4px;z-index:10}
+.map-btn{width:28px;height:28px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.map-btn:hover{background:var(--bg3);color:var(--text)}
+.map-hint{position:absolute;bottom:14px;left:14px;font-size:10px;color:var(--text3);line-height:1.7}
+
+/* LEGEND OVERLAY */
+#legend-box{position:absolute;top:10px;left:10px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;z-index:20;display:none;max-width:200px}
+#legend-box.visible{display:block}
+.legend-title{font-size:9.5px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.legend-item{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px;color:var(--text2)}
+.legend-swatch{width:20px;height:10px;border-radius:2px;flex-shrink:0}
+.legend-dashed{border:1.5px dashed var(--text3);background:none!important;border-radius:2px}
+
+/* LIST VIEW */
+#list-view{position:absolute;inset:0;overflow-y:auto;padding:16px 20px;display:none}
+.list-family{margin-bottom:22px}
+.list-family-header{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.list-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:7px}
+.list-card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;cursor:pointer;transition:all .12s}
+.list-card:hover{border-color:var(--border2);background:var(--bg3)}
+.list-card h4{font-size:12px;font-weight:500;margin-bottom:2px}
+.list-card .lc-period{font-size:10.5px;color:var(--text3);margin-bottom:4px}
+.list-card .lc-figs{font-size:11px;color:var(--text2);line-height:1.4}
+.list-card .lc-tag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:3px;margin-top:5px;font-weight:500}
+
+/* PANEL */
+.panel{width:var(--panel-w);flex-shrink:0;border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;transition:width .2s;overflow:hidden}
+.panel.collapsed{width:0}
+.panel-inner{padding:16px;overflow-y:auto;flex:1;position:relative}
+.close-btn{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1}
+.close-btn:hover{color:var(--text);background:var(--bg3)}
+.p-badge{display:inline-block;padding:3px 9px;border-radius:5px;font-size:12px;font-weight:600;margin-bottom:8px}
+.p-name{font-size:17px;font-weight:600;line-height:1.25;margin-bottom:4px}
+.p-family{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.p-family-dot{width:7px;height:7px;border-radius:2px}
+.p-transversal{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(124,106,247,.12);color:var(--accent);border:1px solid rgba(124,106,247,.25);margin-bottom:12px}
+.p-section{margin-bottom:13px}
+.p-label{font-size:9.5px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.p-period{font-size:12px;color:var(--text2)}
+.p-desc{font-size:12.5px;color:var(--text2);line-height:1.72}
+.p-figs{font-size:12px;color:var(--text);line-height:1.6}
+.p-links{display:flex;flex-direction:column;gap:5px}
+.p-link{font-size:12px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:5px;border:1px solid rgba(124,106,247,.2);transition:all .12s}
+.p-link:hover{background:rgba(124,106,247,.08);border-color:rgba(124,106,247,.4)}
+.empty-panel{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3);font-size:12px;text-align:center;padding:20px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Idéologies politiques occidentales</h1>
+    <span id="subtitle">Chargement…</span>
+  </div>
+  <div class="header-right">
+    <div class="search-wrap">
+      <span class="s-icon">⌕</span>
+      <input type="text" id="search" placeholder="Rechercher un courant…" oninput="onSearch(this.value)">
+    </div>
+    <button class="legend-toggle" onclick="toggleLegend()">⬤ Légende</button>
+    <div class="tabs">
+      <div class="tab active" onclick="switchView('compass',this)">Boussole</div>
+      <div class="tab" onclick="switchView('list',this)">Par famille</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-section">Familles</div>
+    <button class="fam-btn active" id="fam-all" onclick="filterFam('all',this)">
+      <div class="fam-dot" style="background:var(--border2)"></div>
+      <span>Toutes</span>
+      <span class="fam-count" id="cnt-all">0</span>
+    </button>
+  </div>
+
+  <div class="center">
+    <div id="compass-view">
+      <canvas id="compass-canvas"></canvas>
+      <div id="legend-box">
+        <div class="legend-title">Légende</div>
+        <div id="legend-items"></div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div class="legend-item"><div class="legend-swatch legend-dashed"></div><span>Courant transversal</span></div>
+        </div>
+      </div>
+      <div class="map-controls">
+        <button class="map-btn" onclick="zoom(1.18)" title="Zoom +">+</button>
+        <button class="map-btn" onclick="zoom(0.85)" title="Zoom −">−</button>
+        <button class="map-btn" onclick="resetView()" title="Réinitialiser" style="font-size:11px">⌂</button>
+      </div>
+      <div class="map-hint">Molette = zoom · Glisser = déplacer · Clic = détails</div>
+    </div>
+    <div id="list-view"></div>
+  </div>
+
+  <div class="panel collapsed" id="panel">
+    <div class="panel-inner" id="panel-inner">
+      <button class="close-btn" onclick="closePanel()">×</button>
+      <div class="empty-panel">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="1.2"/><line x1="2" y1="18" x2="34" y2="18" stroke="currentColor" stroke-width=".8"/><line x1="18" y1="2" x2="18" y2="34" stroke="currentColor" stroke-width=".8"/></svg>
+        <div>Cliquez sur un courant<br>pour voir les détails</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FAM = {
+  historique:   {label:'Historique fondateur',        color:'#a08848'},
+  marxiste:     {label:'Marxiste & post-marxiste',    color:'#c04040'},
+  gauche:       {label:'Gauche non-marxiste',         color:'#28a870'},
+  liberale:     {label:'Libérale',                    color:'#4888ee'},
+  droite:       {label:'Droite conservatrice',        color:'#c89828'},
+  autoritaire:  {label:'Autoritaire / nationaliste',  color:'#7878a0'},
+  libertaire:   {label:'Libertaire',                  color:'#58b030'},
+  transversal:  {label:'Transversal',                 color:'#a060d8'},
+  religieux:    {label:'Religieux / traditionnel',    color:'#c07830'},
+  contemporain: {label:'Contemporain / émergent',     color:'#30a8c0'},
+  critique:     {label:'Critique & épistémique',      color:'#d85090'},
+};
+
+const NODES = [
+  // ── HISTORIQUE ──────────────────────────────────────────────────
+  {id:'stoicisme', label:'Stoïcisme\npolitique', x:-0.10, y:-0.18, fam:'historique', transversal:false,
+   period:'IIIe s. av. J.-C. – IIe s.',
+   desc:'Cosmopolitisme, loi naturelle universelle, égalité fondamentale des êtres humains. Ancêtre direct du républicanisme civique et du droit naturel. Marc Aurèle : le sage gouverne par la raison, non la passion. Influence directe sur les théories des droits naturels et du droit international moderne.',
+   figs:'Zénon de Kition, Cicéron, Marc Aurèle, Épictète'},
+
+  {id:'salamanque', label:'École de\nSalamanque', x:0.15, y:-0.30, fam:'historique', transversal:false,
+   period:'XVIe – XVIIe siècle',
+   desc:'Théologiens-juristes espagnols fondateurs du droit international et du droit naturel moderne. Vitoria théorise les premiers droits des peuples indigènes face à la conquête. Suárez développe une théorie du contrat social et de la souveraineté populaire avant Locke. Théorie subjective de la valeur anticipant l\'école autrichienne. Courant fondateur souvent méconnu.',
+   figs:'Francisco de Vitoria, Domingo de Soto, Francisco Suárez'},
+
+  {id:'contrat_social', label:'Contrat social', x:-0.04, y:-0.10, fam:'historique', transversal:false,
+   period:'XVIIe – XVIIIe siècle',
+   desc:'Trois versions radicalement incompatibles qui fondent encore la pensée politique moderne. Hobbes : contrat par peur, souverain absolu pour éviter la guerre de tous contre tous. Locke : contrat par consentement, droit de résistance au tyran. Rousseau : volonté générale inaliénable, souveraineté populaire. Ces trois réponses structurent encore gauche, droite et libéralisme aujourd\'hui.',
+   figs:'Hobbes (Léviathan 1651), Locke (Traité 1689), Rousseau (Contrat social 1762)'},
+
+  {id:'machiavel', label:'Machiavélisme', x:0.12, y:-0.48, fam:'historique', transversal:false,
+   period:'XVIe siècle',
+   desc:'Rupture fondatrice : séparer radicalement la politique de la morale. Le Prince doit être lion (force) et renard (ruse). Incontournable — non pour imiter mais pour comprendre que la politique a ses propres lois autonomes. Gramsci en a fait une lecture marxiste majeure (le Prince moderne = le parti révolutionnaire).',
+   figs:'Machiavel (Le Prince 1513) ; interprètes : Gramsci, Leo Strauss, Althusser'},
+
+  // ── MARXISTE ────────────────────────────────────────────────────
+  {id:'soc_utopique', label:'Socialisme\nutopique', x:-0.58, y:-0.30, fam:'marxiste', transversal:false,
+   period:'XVIIIe – XIXe siècle',
+   desc:'Antérieur à Marx : transformation sociale par l\'exemple communautaire et l\'éducation, non par la lutte des classes. Saint-Simon (industrialisme rationnel), Fourier (phalanstères), Owen (coopératives ouvrières en pratique). Marx les a critiqués comme "utopiques" mais ils irriguent encore les mouvements coopératifs et autogestionnaires.',
+   figs:'Saint-Simon, Charles Fourier, Robert Owen'},
+
+  {id:'communisme', label:'Communisme', x:-0.38, y:-0.75, fam:'marxiste', transversal:false,
+   period:'1848 – actuel',
+   desc:'Abolition de la propriété privée, collectivisation des moyens de production, dictature du prolétariat comme étape transitoire vers une société sans classes ni État. Le marxisme-léninisme ajoute le parti d\'avant-garde comme moteur historique. Trois grandes variantes : soviétique, maoïste, castriste.',
+   figs:'Marx, Engels, Lénine, Mao, Gramsci, Rosa Luxemburg'},
+
+  {id:'socialisme', label:'Socialisme', x:-0.34, y:-0.42, fam:'marxiste', transversal:false,
+   period:'XIXe – XXe siècle',
+   desc:'Redistribution des richesses, nationalisations partielles, État-providence fort. Accepte la démocratie représentative — différence fondamentale avec le communisme. Courant dominant de la gauche européenne jusqu\'aux années 80. La tension réformisme/révolution le traverse depuis Bernstein vs Luxemburg.',
+   figs:'Jaurès, Blum, Attlee, Bevan, Bebel, Bernstein'},
+
+  {id:'reformisme', label:'Réformisme', x:-0.25, y:-0.28, fam:'marxiste', transversal:false,
+   period:'1899 – actuel',
+   desc:'Changer le système de l\'intérieur, par étapes graduelles, sans révolution. Position idéologique distincte, souvent sous-estimée. Opposition historique fondamentale au sein de la gauche : Bernstein (réformiste) vs Rosa Luxemburg (révolutionnaire). Structurante pour comprendre la social-démocratie et ses compromis.',
+   figs:'Eduard Bernstein, Jean Jaurès, Guy Mollet ; opposé à : Luxemburg, Lénine'},
+
+  // ── GAUCHE ──────────────────────────────────────────────────────
+  {id:'socdem', label:'Social-\ndémocratie', x:-0.30, y:-0.08, fam:'gauche', transversal:false,
+   period:'XXe siècle',
+   desc:'Compromis historique entre marché et solidarité après 1945. Régulation du capitalisme, droits sociaux étendus, welfare state. Renoncement au socialisme radical via le programme de Bad Godesberg (SPD, 1959). Courant dominant de la gauche gouvernementale européenne pendant 40 ans.',
+   figs:'Palme, Willy Brandt, Jospin, Mitterrand (après 1983), Attlee'},
+
+  {id:'republicanisme', label:'Républicanisme\ncivique', x:-0.16, y:-0.15, fam:'gauche', transversal:false,
+   period:'Antiquité – actuel',
+   desc:'La liberté comme non-domination (et non simple absence d\'interférence). La participation active à la cité est condition de la liberté réelle, non son résultat. Fondamental pour comprendre la tradition républicaine française et sa différence profonde avec le libéralisme anglo-saxon.',
+   figs:'Cicéron, Rousseau, Hannah Arendt, Philip Pettit, Quentin Skinner'},
+
+  {id:'tiers_mondisme', label:'Tiers-mondisme', x:-0.52, y:-0.22, fam:'gauche', transversal:false,
+   period:'1955 – 1980s',
+   desc:'Non-alignement entre blocs, développement autonome du Sud, solidarité entre peuples anciennement colonisés. Conférence de Bandung (1955). Très influent dans les années 60-70 en Afrique, Asie, Amérique latine. Irrigue encore des gauches anti-impérialistes contemporaines.',
+   figs:'Senghor, Nkrumah, Nehru, Castro, Ben Bella, Fanon'},
+
+  {id:'altermondialisme', label:'Alter-\nmondialisme', x:-0.44, y:-0.10, fam:'gauche', transversal:false,
+   period:'1990s – 2000s',
+   desc:'"Un autre monde est possible." Critique de la mondialisation néolibérale sans rejeter l\'internationalisme. Forum social mondial de Porto Alegre (2001). Bourdieu tardif. Structure encore la gauche radicale non marxiste. Attac, campagnes contre l\'OMC et le FMI.',
+   figs:'Bourdieu, Naomi Klein, José Bové, Attac, Chomsky (partiellement)'},
+
+  // ── CRITIQUE ────────────────────────────────────────────────────
+  {id:'ecole_francfort', label:'École de\nFrancfort', x:-0.46, y:0.05, fam:'critique', transversal:false,
+   period:'1923 – actuel',
+   desc:'Marxisme + psychanalyse + philosophie critique. Critique de la "raison instrumentale" : la Raison elle-même peut produire la barbarie (thèse centrale de la Dialectique de la Raison). Analyse de l\'industrie culturelle comme manipulation des masses. Habermas prolonge vers la démocratie délibérative et l\'éthique de la discussion.',
+   figs:'Adorno, Horkheimer, Marcuse, Walter Benjamin, Habermas, Axel Honneth'},
+
+  {id:'feminisme', label:'Féminisme', x:-0.54, y:0.18, fam:'critique', transversal:true,
+   period:'XVIIIe – actuel',
+   desc:'Courant non monolithique : libéral (égalité formelle des droits), socialiste (genre + classe), radical (Dworkin : le patriarcat comme système de domination), matérialiste français (Wittig, Delphy : le genre comme classe), intersectionnel (Crenshaw : intersections race/genre/classe). Traverse tous les axes politiques.',
+   figs:'Beauvoir, Wollstonecraft, Dworkin, Judith Butler, Crenshaw, bell hooks'},
+
+  {id:'decolonialisme', label:'Décolonialisme', x:-0.66, y:0.28, fam:'critique', transversal:false,
+   period:'1950s – actuel',
+   desc:'Critique du colonialisme comme structure persistante et non simple épisode historique clos. Fanon (psychiatrie + libération nationale), Césaire (négritude), Said (orientalisme : l\'Occident construit l\'Orient pour se définir lui-même), Mbembe (nécropolitique : le pouvoir de décider qui peut vivre et qui doit mourir).',
+   figs:'Aimé Césaire, Frantz Fanon, Edward Said, Achille Mbembe, Albert Memmi'},
+
+  {id:'constructivisme', label:'Constructivisme\nsocial', x:-0.38, y:0.20, fam:'critique', transversal:true,
+   period:'1966 – actuel',
+   desc:'La réalité sociale est construite historiquement, non donnée naturellement. La nation, le genre, la race sont des constructions sociales. Socle épistémique d\'une large partie de la pensée critique contemporaine. Implications politiques profondes : ce qui est construit peut être déconstruit et reconstruit.',
+   figs:'Berger & Luckmann, Judith Butler, Benedict Anderson, Bourdieu'},
+
+  // ── LIBERALE ────────────────────────────────────────────────────
+  {id:'liberalisme', label:'Libéralisme\nclassique', x:0.23, y:0.12, fam:'liberale', transversal:false,
+   period:'XVIIe – XIXe siècle',
+   desc:'⚠ Terme ambigu : libéralisme politique (droits individuels, séparation des pouvoirs — Locke, Montesquieu) ≠ libéralisme économique (marché libre — Smith, Hayek). En France, connoté à droite. En anglais, "liberal" désigne souvent la gauche modérée. Tocqueville en est la figure la plus nuancée et la plus pertinente pour lire la démocratie.',
+   figs:'Locke, Montesquieu, Adam Smith, John Stuart Mill, Tocqueville'},
+
+  {id:'utilitarisme', label:'Utilitarisme', x:0.10, y:0.18, fam:'liberale', transversal:false,
+   period:'XVIIIe – actuel',
+   desc:'"La plus grande somme de bonheur pour le plus grand nombre." Doctrine éthique et politique la plus influente dans la pensée anglo-saxonne contemporaine. Structure des débats immenses : bioéthique, politiques publiques, efficacité altruiste, IA. Bentham en est le fondateur systématique, Mill l\'a raffiné, Singer le prolonge aujourd\'hui.',
+   figs:'Jeremy Bentham, John Stuart Mill, Henry Sidgwick, Peter Singer'},
+
+  {id:'social_lib', label:'Social-\nlibéralisme', x:0.07, y:0.06, fam:'liberale', transversal:false,
+   period:'1971 – actuel',
+   desc:'Entre libéralisme et social-démocratie. Rawls est sans doute le philosophe politique le plus influent du XXe siècle : deux principes de justice — liberté égale pour tous ; les inégalités ne sont justifiées que si elles profitent aux plus défavorisés (principe de différence). Son débat avec Nozick est incontournable.',
+   figs:'John Rawls, Amartya Sen, Ronald Dworkin, Keynes (partiellement)'},
+
+  {id:'neoliberalisme', label:'Néolibéralisme', x:0.46, y:0.15, fam:'liberale', transversal:false,
+   period:'1970s – actuel',
+   desc:'À distinguer du libéralisme classique. Projet spécifique : réduction de l\'État, privatisation, dérégulation financière, concurrence comme principe universel d\'organisation sociale. Consensus de Washington. Foucault en a donné l\'analyse critique la plus pénétrante dans ses cours au Collège de France (biopolitique, homo oeconomicus).',
+   figs:'Hayek, Milton Friedman, École de Chicago ; critique : Foucault, David Harvey'},
+
+  {id:'progressisme_lib', label:'Progressisme\nlibéral', x:0.30, y:0.06, fam:'liberale', transversal:false,
+   period:'1990s – actuel',
+   desc:'Courant centro-libéral dominant en Europe depuis 30 ans. Socialement progressiste (droits LGBT, féminisme institutionnel) mais économiquement libéral. Pro-européen, technocratique, "troisième voie". Incarné par le macronisme, le blairisme, la politique de Clinton. Giddens en est le théoricien.',
+   figs:'Macron, Blair, Clinton, Merkel, Anthony Giddens (théoricien)'},
+
+  {id:'pragmatisme', label:'Pragmatisme\npolitique', x:0.05, y:0.02, fam:'liberale', transversal:true,
+   period:'XIXe – XXe siècle',
+   desc:'Refuse les grands systèmes idéologiques. Juge les idées à leurs effets pratiques dans le monde réel — une idée est vraie si elle fonctionne. Très influent dans la pensée politique anglo-saxonne, quasi absent du débat français, ce qui explique en partie pourquoi Américains et Européens pensent la politique différemment.',
+   figs:'William James, John Dewey, Richard Rorty'},
+
+  // ── DROITE ──────────────────────────────────────────────────────
+  {id:'conservatisme', label:'Conservatisme', x:0.42, y:-0.22, fam:'droite', transversal:false,
+   period:'XVIIIe – actuel',
+   desc:'Préservation des institutions, de la tradition et de l\'ordre social. Méfiance envers les réformes rapides qui ignorent la sagesse accumulée. Burke en est l\'ancêtre, en réaction à la Révolution française. Deux variantes : conservatisme social (mœurs, famille, religion) et conservatisme économique (propriété, marché).',
+   figs:'Edmund Burke, Joseph de Maistre, Tocqueville (partiellement), T.S. Eliot'},
+
+  {id:'demochr', label:'Démocratie\nchrétienne', x:0.38, y:-0.06, fam:'droite', transversal:false,
+   period:'XXe siècle',
+   desc:'Valeurs chrétiennes appliquées au politique : solidarité, subsidiarité, famille, bien commun. Droite modérée et pro-européenne. Fondatrice de la construction européenne après 1945 (Schuman, Adenauer, De Gasperi). Inspirée de la doctrine sociale de l\'Église (Rerum Novarum, 1891).',
+   figs:'Adenauer, De Gasperi, Schuman, Sturzo, Jacques Maritain'},
+
+  {id:'nat_rep', label:'Nationalisme\nrépublicain', x:0.20, y:-0.30, fam:'droite', transversal:true,
+   period:'XVIIIe – actuel',
+   desc:'La nation comme cadre du projet démocratique et républicain — distinct du nationalisme autoritaire et ethnoculturel. Essentiel pour comprendre la France et son rapport à la République universelle. Traverse la gauche et la droite selon les périodes.',
+   figs:'Sieyès, Mazzini, de Gaulle, Michelet, Jules Ferry'},
+
+  {id:'gaullisme', label:'Gaullisme', x:0.26, y:-0.42, fam:'droite', transversal:false,
+   period:'1940 – actuel',
+   desc:'Synthèse originale française : souverainisme fort, État stratège, économie mixte, grandeur nationale, anti-américanisme structurel, réconciliation nationale au-dessus des partis. Hérite du bonapartisme mais dans un cadre républicain démocratique. Courant encore structurant en France.',
+   figs:'De Gaulle, Pompidou, Malraux, Michel Debré ; héritiers : Chirac, Séguin'},
+
+  // ── AUTORITAIRE ─────────────────────────────────────────────────
+  {id:'bonapartisme', label:'Bonapartisme\n/ Césarisme', x:0.16, y:-0.55, fam:'autoritaire', transversal:false,
+   period:'XIXe siècle – actuel',
+   desc:'Forme politique spécifiquement française : autorité personnelle forte légitimée par le peuple via le plébiscite, au-dessus des partis. Tocqueville en a donné la critique la plus lucide ("despotisme doux"). Marx l\'analyse dans Le 18 Brumaire. Éclaire directement le gaullisme et certaines lectures du macronisme.',
+   figs:'Napoléon I & III ; analysé par Tocqueville, Marx ; de Gaulle comme héritier ambigu'},
+
+  {id:'corporatisme', label:'Corporatisme', x:0.32, y:-0.60, fam:'autoritaire', transversal:false,
+   period:'XIXe – XXe siècle',
+   desc:'Organisation de l\'économie par corps professionnels — ni capitalisme pur ni socialisme marxiste. Courant catholique (subsidiarité) et fasciste (Mussolini en a fait sa doctrine économique officielle). Présent sous forme atténuée dans certaines démocraties chrétiennes et dans le modèle néocorporatiste scandinave.',
+   figs:'Mussolini (version fasciste), Salazar, Dollfuss ; racines catholiques : La Tour du Pin'},
+
+  {id:'fascisme', label:'Fascisme', x:0.36, y:-0.82, fam:'autoritaire', transversal:false,
+   period:'1919 – 1945 (héritages actuels)',
+   desc:'Distinct du nationalisme autoritaire classique. Ajoute : culte de la violence et de la guerre comme valeurs en soi, mobilisation de masse permanente, corporatisme économique, mythe du chef charismatique, esthétisation du politique. Umberto Eco a listé 14 traits du "ur-fascisme". Arendt en a fait l\'analyse la plus puissante (Origines du totalitarisme).',
+   figs:'Mussolini, Gentile ; analysé par Arendt, Eco, Robert Paxton, Wilhelm Reich'},
+
+  {id:'nat_ethno', label:'Nationalisme\nethnoculturel', x:0.62, y:-0.45, fam:'autoritaire', transversal:false,
+   period:'XIXe – actuel',
+   desc:'La nation définie par une ethnie ou une culture partagée, non par une adhésion civique volontaire. Distinct du nationalisme républicain. Herder en est l\'ancêtre philosophique, Fichte l\'a radicalisé. L\'identitarisme contemporain et les nouvelles droites (Alain de Benoist, GRECE) en sont les versions actuelles.',
+   figs:'Herder, Fichte, Barrès ; contemporain : Alain de Benoist, Renaud Camus'},
+
+  {id:'nat_auth', label:'Nationalisme\nautorit.', x:0.55, y:-0.65, fam:'autoritaire', transversal:false,
+   period:'XIXe – XXe siècle',
+   desc:'Primauté de la nation, ordre, tradition, État fort. Distinct du fascisme : moins de mobilisation de masse, plus conservateur, maintient les structures sociales traditionnelles sans aller jusqu\'à la révolution fasciste. Regroupe les régimes autoritaires conservateurs.',
+   figs:'Franco, Salazar, Pinochet, Horthy, Pétain'},
+
+  // ── LIBERTAIRE ──────────────────────────────────────────────────
+  {id:'anarchisme', label:'Anarchisme', x:-0.44, y:0.75, fam:'libertaire', transversal:false,
+   period:'XIXe – actuel',
+   desc:'Abolition de l\'État et de toute autorité hiérarchique illégitime. Auto-organisation, fédéralisme horizontal, entraide. Anarcho-communisme (Kropotkine : l\'entraide est naturelle et plus forte que la compétition) et anarcho-syndicalisme (Bakounine, CNT espagnole : grève générale révolutionnaire).',
+   figs:'Proudhon, Bakounine, Kropotkine, Emma Goldman, Errico Malatesta'},
+
+  {id:'lib_gauche', label:'Libertarisme\n(gauche)', x:-0.28, y:0.60, fam:'libertaire', transversal:false,
+   period:'XXe – actuel',
+   desc:'Anti-État ET anti-capitaliste. La propriété privée des moyens de production est elle-même une forme de domination, pas une liberté. Distinct de l\'anarchisme classique par son ancrage socialiste plus explicite. Chomsky en est la figure la plus connue et la plus accessible. Bookchin développe le "municipalisme libertaire".',
+   figs:'Proudhon (ancêtre), Noam Chomsky, Michael Albert, Murray Bookchin'},
+
+  {id:'ecologie', label:'Écologie\npolitique', x:-0.14, y:0.62, fam:'libertaire', transversal:true,
+   period:'1970s – actuel',
+   desc:'⚠ Positionnement discutable. Les Verts allemands sont social-démocrates au centre-gauche. Il existe un éco-autoritarisme (urgence climatique justifiant un État fort). L\'écologie traverse les axes. Tension permanente entre décroissance radicale (Illich) et réformisme vert institutionnel.',
+   figs:'Ivan Illich, Hans Jonas, André Gorz, Serge Latouche ; Verts européens'},
+
+  {id:'libertarianisme', label:'Libertarianisme\n(droite)', x:0.60, y:0.65, fam:'libertaire', transversal:false,
+   period:'1974 – actuel',
+   desc:'Liberté individuelle maximale, État minimal ou nul (minarchisme ou anarcho-capitalisme), propriété privée absolue. Courant principalement américain. Le débat Nozick/Rawls (publiés la même année, 1971-74) est le débat central de la philosophie politique du XXe siècle. Nozick : la justice, c\'est respecter les droits, pas redistribuer.',
+   figs:'Robert Nozick, Milton Friedman, Murray Rothbard, Ayn Rand'},
+
+  // ── TRANSVERSAL ─────────────────────────────────────────────────
+  {id:'populisme', label:'Populisme', x:0.04, y:-0.45, fam:'transversal', transversal:true,
+   period:'XIXe – actuel',
+   desc:'Oppose "le peuple pur et uni" aux "élites corrompues". Pas une idéologie complète mais une logique politique et rhétorique transversale. Gauche (Mélenchon, Podemos, Chávez) ou droite (Trump, Orbán, Le Pen). Laclau y voyait un potentiel émancipateur. Mouffe défend un "populisme de gauche" comme réponse à la montée des droites.',
+   figs:'Laclau & Mouffe (théoriciens), Mélenchon, Chávez, Trump, Orbán, Le Pen'},
+
+  {id:'souverainisme', label:'Souverainisme', x:0.08, y:-0.35, fam:'transversal', transversal:true,
+   period:'1990s – actuel',
+   desc:'Défense de la souveraineté nationale face à la mondialisation et aux institutions supranationales (UE, FMI, OMC). Traverse la gauche et la droite — c\'est sa caractéristique principale. En France : Chevènement à gauche, Pasqua à droite, Mélenchon et Le Pen aujourd\'hui par des chemins idéologiquement opposés.',
+   figs:'De Gaulle (précurseur), Chevènement, Pasqua, Mélenchon, Le Pen'},
+
+  {id:'nat_rev', label:'Nationalisme\nrévolutionnaire', x:-0.06, y:-0.58, fam:'transversal', transversal:true,
+   period:'XXe siècle',
+   desc:'Synthèse de nationalisme et de socialisme hors du cadre marxiste orthodoxe. Ni droite pure ni gauche classique — d\'où sa nature transversale. Péronisme argentin (troisième voie), Baathisme arabe (Syrie, Irak de Saddam), Nassérisme égyptien. Mussolini avant le fascisme s\'en réclamait.',
+   figs:'Perón, Nasser, Michel Aflaq (Baath) ; premier Mussolini'},
+
+  {id:'communautarisme', label:'Communau-\ntarisme', x:0.36, y:0.05, fam:'transversal', transversal:false,
+   period:'1980s – actuel',
+   desc:'Critique du libéralisme individualiste : l\'individu ne précède pas la communauté qui le constitue. Le soi est "situé" dans des traditions, des récits, des appartenances. Le débat libéraux/communautariens des années 80-90 est l\'un des plus féconds de la philosophie politique moderne. Éclaire les débats sur laïcité, multiculturalisme, identité.',
+   figs:'Michael Sandel, Alasdair MacIntyre, Charles Taylor, Michael Walzer'},
+
+  // ── RELIGIEUX ───────────────────────────────────────────────────
+  {id:'doctrine_sociale', label:'Doctrine sociale\nde l\'Église', x:0.40, y:-0.12, fam:'religieux', transversal:false,
+   period:'1891 – actuel',
+   desc:'Socle théologique de la démocratie chrétienne et d\'une large partie de la droite européenne et latino-américaine. Rerum Novarum (1891) : ni capitalisme pur ni socialisme. Principes fondamentaux : subsidiarité (décider au niveau le plus bas possible), solidarité, bien commun, destination universelle des biens. Laudato Si\' (2015) : écologie intégrale.',
+   figs:'Léon XIII, Jean-Paul II, Pape François ; Maritain, Emmanuel Mounier'},
+
+  {id:'islamisme', label:'Islamisme\npolitique', x:0.48, y:-0.72, fam:'religieux', transversal:false,
+   period:'1928 – actuel',
+   desc:'Idéologie politique structurée visant à organiser l\'État selon les principes de la charia. Ni simple "intégrisme religieux" ni simple nationalisme arabe. Deux grandes variantes : réformiste et participatif (Frères musulmans fondés 1928, AKP turc) vs révolutionnaire et jihadiste (Qutb, Khomeini). Courant majeur depuis les années 70.',
+   figs:'Hassan al-Banna, Sayyid Qutb, Mawdudi, Khomeini ; Frères musulmans, AKP'},
+
+  // ── CONTEMPORAIN ────────────────────────────────────────────────
+  {id:'transhumanisme', label:'Transhumanisme', x:0.52, y:0.35, fam:'contemporain', transversal:false,
+   period:'1980s – actuel',
+   desc:'L\'humain comme perfectible technologiquement au-delà de ses limites biologiques actuelles. Augmentation cognitive, longévité radicale, intelligence artificielle générale, post-humanité. Implications majeures sur bioéthique, inégalité d\'accès, définition de l\'humain. En tension directe avec l\'écologie et certains courants féministes.',
+   figs:'Nick Bostrom, Ray Kurzweil, Max More ; critique : Habermas, Michael Sandel'},
+
+  {id:'accelerationnisme', label:'Accéléra-\ntionnisme', x:0.06, y:-0.76, fam:'contemporain', transversal:true,
+   period:'2000s – actuel',
+   desc:'Les contradictions du capitalisme ou de la technologie doivent être poussées à leur terme plutôt que freinées ou réformées. L/ACC (gauche) : Srnicek & Williams, post-travail, automatisation libératrice, revenu universel. R/ACC (droite) : Nick Land, techno-darwinisme, dissolution des structures politiques par le marché et la technologie.',
+   figs:'Nick Land (droite), Srnicek & Williams (gauche), CCRU, Benjamin Noys (critique)'},
+];
+
+// ── CANVAS STATE ─────────────────────────────────────────────────
+const canvas = document.getElementById('compass-canvas');
+const ctx = canvas.getContext('2d');
+let scale = 1, offX = 0, offY = 0;
+let dragging = false, lastX = 0, lastY = 0, didDrag = false;
+let activeFam = 'all', searchQ = '', selectedNode = null;
+
+function toScreen(nx, ny) {
+  const range = Math.min(canvas.width, canvas.height) * 0.41 * scale;
+  return [canvas.width/2 + offX + nx*range, canvas.height/2 + offY - ny*range];
+}
+function fromScreen(sx, sy) {
+  const range = Math.min(canvas.width, canvas.height) * 0.41 * scale;
+  return [(sx - canvas.width/2 - offX)/range, -(sy - canvas.height/2 - offY)/range];
+}
+
+function resize() {
+  canvas.width = canvas.offsetWidth * devicePixelRatio;
+  canvas.height = canvas.offsetHeight * devicePixelRatio;
+  draw();
+}
+
+function visibleSet() {
+  return new Set(NODES.filter(n => {
+    if (activeFam !== 'all' && n.fam !== activeFam) return false;
+    if (searchQ) {
+      const q = searchQ.toLowerCase();
+      return n.label.toLowerCase().includes(q) || (n.figs||'').toLowerCase().includes(q) || (n.desc||'').toLowerCase().includes(q);
+    }
+    return true;
+  }).map(n => n.id));
+}
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  const dpr = devicePixelRatio;
+  ctx.clearRect(0, 0, W, H);
+
+  // subtle grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = dpr;
+  const [cx0, cy0] = toScreen(0, 0);
+  for (let v = -1.2; v <= 1.21; v += 0.25) {
+    const [x] = toScreen(v, 0); const [,y] = toScreen(0, v);
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // quadrant tints
+  const [cx, cy] = toScreen(0, 0);
+  const quadrants = [
+    {dx:-1, dy:-1, color:'rgba(192,64,64,0.04)'},
+    {dx:1,  dy:-1, color:'rgba(120,120,160,0.04)'},
+    {dx:-1, dy:1,  color:'rgba(40,168,112,0.04)'},
+    {dx:1,  dy:1,  color:'rgba(88,176,48,0.04)'},
+  ];
+  quadrants.forEach(q => {
+    const x = q.dx < 0 ? 0 : cx;
+    const y = q.dy < 0 ? 0 : cy;
+    const w = q.dx < 0 ? cx : W - cx;
+    const h = q.dy < 0 ? cy : H - cy;
+    ctx.fillStyle = q.color;
+    ctx.fillRect(x, y, w, h);
+  });
+
+  // axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.lineWidth = 1.5 * dpr;
+  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+
+  // axis labels
+  ctx.font = `600 ${9.5*dpr}px 'Segoe UI',sans-serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.20)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('AUTORITAIRE', cx, 6*dpr);
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('LIBERTAIRE', cx, H - 6*dpr);
+  ctx.textBaseline = 'middle';
+  ctx.save(); ctx.translate(10*dpr, cy); ctx.rotate(-Math.PI/2); ctx.fillText('GAUCHE', 0, 0); ctx.restore();
+  ctx.save(); ctx.translate(W - 10*dpr, cy); ctx.rotate(Math.PI/2); ctx.fillText('DROITE', 0, 0); ctx.restore();
+
+  const vis = visibleSet();
+  const dim = activeFam !== 'all' || searchQ !== '';
+
+  NODES.forEach(n => {
+    const isDim = dim && !vis.has(n.id);
+    const isSel = selectedNode && selectedNode.id === n.id;
+    const fam = FAM[n.fam];
+    const [sx, sy] = toScreen(n.x, n.y);
+
+    const fs = 9.5 * dpr;
+    ctx.font = `500 ${fs}px 'Segoe UI',sans-serif`;
+    const lines = n.label.split('\n');
+    const mw = Math.max(...lines.map(l => ctx.measureText(l).width));
+    const px = 9*dpr, py = 5*dpr, lh = fs * 1.35;
+    const bw = mw + px*2, bh = lines.length*lh + py*2;
+    const bx = sx - bw/2, by = sy - bh/2;
+
+    ctx.save();
+    ctx.globalAlpha = isDim ? 0.10 : 1;
+
+    if (isSel) { ctx.shadowColor = fam.color; ctx.shadowBlur = 20*dpr; }
+
+    // bg
+    ctx.fillStyle = isDim ? '#181820' : fam.color + '18';
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 5*dpr); ctx.fill();
+
+    // border
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = isSel ? fam.color : (isDim ? 'rgba(255,255,255,0.05)' : fam.color + '70');
+    ctx.lineWidth = (isSel ? 1.8 : 0.9) * dpr;
+    if (n.transversal && !isDim) ctx.setLineDash([4*dpr, 3*dpr]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // text
+    ctx.fillStyle = isDim ? 'rgba(255,255,255,0.18)' : fam.color;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, sx, sy - (lines.length-1)*lh/2 + i*lh);
+    });
+
+    ctx.restore();
+  });
+}
+
+// ── EVENTS ───────────────────────────────────────────────────────
+canvas.addEventListener('mousedown', e => {
+  dragging = true; didDrag = false;
+  lastX = e.clientX*devicePixelRatio; lastY = e.clientY*devicePixelRatio;
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const dx = e.clientX*devicePixelRatio - lastX;
+  const dy = e.clientY*devicePixelRatio - lastY;
+  if (Math.abs(dx) > 2 || Math.abs(dy) > 2) didDrag = true;
+  offX += dx; offY += dy;
+  lastX = e.clientX*devicePixelRatio; lastY = e.clientY*devicePixelRatio;
+  draw();
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+
+canvas.addEventListener('click', e => {
+  if (didDrag) return;
+  const rect = canvas.getBoundingClientRect();
+  const sx = (e.clientX - rect.left)*devicePixelRatio;
+  const sy = (e.clientY - rect.top)*devicePixelRatio;
+  const range = Math.min(canvas.width, canvas.height)*0.41*scale;
+  let hit = null, best = 50*devicePixelRatio;
+  NODES.forEach(n => {
+    const [nx, ny] = toScreen(n.x, n.y);
+    const d = Math.hypot(sx-nx, sy-ny);
+    if (d < best) { best = d; hit = n; }
+  });
+  if (hit) selectNode(hit); else deselect();
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const f = e.deltaY < 0 ? 1.12 : 0.89;
+  scale = Math.max(0.35, Math.min(6, scale*f));
+  draw();
+}, {passive:false});
+
+function zoom(f) { scale = Math.max(0.35, Math.min(6, scale*f)); draw(); }
+function resetView() { scale=1; offX=0; offY=0; draw(); }
+
+// ── PANEL ────────────────────────────────────────────────────────
+function selectNode(n) {
+  selectedNode = n;
+  const fam = FAM[n.fam];
+  document.getElementById('panel').classList.remove('collapsed');
+  document.getElementById('panel-inner').innerHTML = `
+    <button class="close-btn" onclick="closePanel()">×</button>
+    <div style="margin-bottom:14px">
+      <div class="p-name">${n.label.replace('\n',' ')}</div>
+      <div class="p-family"><div class="p-family-dot" style="background:${fam.color}"></div><span style="color:${fam.color}">${fam.label}</span></div>
+      ${n.transversal ? '<div class="p-transversal">Courant transversal</div>' : ''}
+    </div>
+    <div class="p-section">
+      <div class="p-label">Période</div>
+      <div class="p-period">${n.period}</div>
+    </div>
+    <div class="p-section">
+      <div class="p-label">Description</div>
+      <div class="p-desc">${n.desc}</div>
+    </div>
+    <div class="p-section">
+      <div class="p-label">Figures clés</div>
+      <div class="p-figs">${n.figs}</div>
+    </div>
+    <div class="p-section">
+      <div class="p-label">Rechercher</div>
+      <div class="p-links">
+        <a class="p-link" href="https://fr.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(n.label.replace('\n',' '))}" target="_blank">→ Rechercher sur Wikipédia</a>
+        <a class="p-link" href="https://www.google.com/search?q=${encodeURIComponent(n.label.replace('\n',' ')+' idéologie politique philosophie')}" target="_blank">→ Rechercher sur Google</a>
+      </div>
+    </div>
+  `;
+  draw();
+}
+function deselect() { selectedNode=null; document.getElementById('panel-inner').innerHTML=`<button class="close-btn" onclick="closePanel()">×</button><div class="empty-panel"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="currentColor" stroke-width="1.2"/><line x1="2" y1="18" x2="34" y2="18" stroke="currentColor" stroke-width=".8"/><line x1="18" y1="2" x2="18" y2="34" stroke="currentColor" stroke-width=".8"/></svg><div>Cliquez sur un courant<br>pour voir les détails</div></div>`; draw(); }
+function closePanel() { deselect(); document.getElementById('panel').classList.add('collapsed'); }
+
+// ── SIDEBAR ──────────────────────────────────────────────────────
+document.getElementById('cnt-all').textContent = NODES.length;
+const legendItems = document.getElementById('legend-items');
+
+Object.entries(FAM).forEach(([key, f]) => {
+  const cnt = NODES.filter(n => n.fam === key).length;
+  // sidebar
+  const btn = document.createElement('button');
+  btn.className = 'fam-btn'; btn.id = 'fam-'+key;
+  btn.innerHTML = `<div class="fam-dot" style="background:${f.color}"></div><span>${f.label}</span><span class="fam-count">${cnt}</span>`;
+  btn.onclick = () => filterFam(key, btn);
+  document.getElementById('sidebar').appendChild(btn);
+  // legend
+  const li = document.createElement('div');
+  li.className = 'legend-item';
+  li.innerHTML = `<div class="legend-swatch" style="background:${f.color}22;border:1px solid ${f.color}70"></div><span>${f.label}</span>`;
+  legendItems.appendChild(li);
+});
+
+function filterFam(fam, btn) {
+  activeFam = fam;
+  document.querySelectorAll('.fam-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  draw();
+}
+
+// ── SEARCH ───────────────────────────────────────────────────────
+function onSearch(q) { searchQ = q.trim(); buildList(); draw(); }
+
+// ── LEGEND ───────────────────────────────────────────────────────
+function toggleLegend() { document.getElementById('legend-box').classList.toggle('visible'); }
+
+// ── LIST VIEW ────────────────────────────────────────────────────
+function buildList() {
+  const lv = document.getElementById('list-view');
+  lv.innerHTML = '';
+  const vis = visibleSet();
+  Object.entries(FAM).forEach(([key, f]) => {
+    const ns = NODES.filter(n => n.fam === key && vis.has(n.id));
+    if (!ns.length) return;
+    const block = document.createElement('div');
+    block.className = 'list-family';
+    block.innerHTML = `<div class="list-family-header" style="color:${f.color}"><div style="width:8px;height:8px;border-radius:2px;background:${f.color};flex-shrink:0"></div>${f.label} <span style="color:var(--text3);font-weight:400">${ns.length}</span></div><div class="list-grid" id="lg-${key}"></div>`;
+    lv.appendChild(block);
+    const grid = block.querySelector('#lg-'+key);
+    ns.forEach(n => {
+      const card = document.createElement('div');
+      card.className = 'list-card';
+      card.style.borderLeftColor = f.color;
+      card.style.borderLeftWidth = '3px';
+      card.innerHTML = `<h4>${n.label.replace('\n',' ')}</h4><div class="lc-period">${n.period}</div><div class="lc-figs">${n.figs.split(',').slice(0,3).join(', ')}</div>${n.transversal ? `<div class="lc-tag" style="background:rgba(124,106,247,.12);color:var(--accent)">Transversal</div>` : ''}`;
+      card.onclick = () => { switchView('compass', document.querySelectorAll('.tab')[0]); setTimeout(() => selectNode(n), 60); };
+      grid.appendChild(card);
+    });
+  });
+}
+
+// ── VIEW SWITCH ──────────────────────────────────────────────────
+function switchView(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (id === 'compass') {
+    document.getElementById('compass-view').style.display = '';
+    document.getElementById('list-view').style.display = 'none';
+  } else {
+    document.getElementById('compass-view').style.display = 'none';
+    document.getElementById('list-view').style.display = 'block';
+    buildList();
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+document.getElementById('subtitle').textContent = `${NODES.length} courants · ${Object.keys(FAM).length} familles`;
+new ResizeObserver(resize).observe(canvas);
+resize();
+buildList();
+</script>
+</body>
+</html>
